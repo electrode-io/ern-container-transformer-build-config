@@ -1,0 +1,9 @@
+//
+// DummyPods-Debug.xcconfig
+//
+
+#include "Pods/Target Support Files/Pods-ElectrodeContainer/Pods-ElectrodeContainer.debug.xcconfig"
+
+CLANG_ENABLE_MODULES = YES
+IPHONEOS_DEPLOYMENT_TARGET = 9.0
+SWIFT_OPTIMIZATION_LEVEL = -Onone

@@ -12,6 +12,13 @@ const dummyDebugXcconfigPath = path.resolve(
   dummyDebugXCconfigFileName
 )
 
+const dummyPodsDebugXCconfigFileName = 'DummyPods-Debug.xcconfig'
+const dummyPodsDebugXcconfigPath = path.resolve(
+  __dirname,
+  'fixtures',
+  dummyPodsDebugXCconfigFileName
+)
+
 const tmpPath = path.resolve(__dirname, 'tmp')
 
 const buildSettingsObject = {
@@ -107,6 +114,27 @@ DEBUG_INFORMATION_FORMAT = dwarf'
         SWIFT_OPTIMIZATION_LEVEL: '-Onone',
         DEBUG_INFORMATION_FORMAT: 'dwarf',
       })
+    })
+
+    it('should preserve .xcconfig includes', async () => {
+      shell.cp(dummyPodsDebugXcconfigPath, tmpPath)
+      const pathToXCConfigFile = path.join(
+        tmpPath,
+        dummyPodsDebugXCconfigFileName
+      )
+      const sut = new XCConfig(pathToXCConfigFile)
+      await sut.addOrUpdateBuildSettings({
+        CLANG_ENABLE_MODULES: 'NO',
+      })
+      const writtenFileContent = fs.readFileSync(pathToXCConfigFile).toString()
+      // Existing build setting
+      expect(writtenFileContent).contains('IPHONEOS_DEPLOYMENT_TARGET = 9.0')
+      // New build setting
+      expect(writtenFileContent).contains('CLANG_ENABLE_MODULES = NO')
+      // xcconfig #include
+      expect(writtenFileContent).contains(
+        '#include "Pods/Target Support Files/Pods-ElectrodeContainer/Pods-ElectrodeContainer.debug.xcconfig"'
+      )
     })
   })
 })
