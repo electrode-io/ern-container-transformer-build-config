@@ -39,16 +39,15 @@ export default class XCConfig {
       )
     }
     const configFileContent = (await readFile(this.filePath)).toString()
-    return Object.fromEntries(
-      configFileContent
-        .split('\n')
-        .map(
-          l =>
-            XCConfig.includeRe.exec(l)?.slice(1) ||
-            XCConfig.settingRe.exec(l)?.slice(1)
-        )
-        .filter((entry): entry is string[] => !!entry)
-    )
+    return configFileContent
+      .split('\n')
+      .map(
+        l =>
+          XCConfig.includeRe.exec(l)?.slice(1) ||
+          XCConfig.settingRe.exec(l)?.slice(1)
+      )
+      .filter((entry): entry is string[] => !!entry)
+      .reduce((obj, [key, val]) => Object.assign(obj, { [key]: val }), {})
   }
 
   /**
