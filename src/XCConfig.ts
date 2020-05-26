@@ -4,6 +4,7 @@ import { readFile, writeFile, exists } from './fs-async'
  * Helper class dealing with XCConfig files
  */
 export default class XCConfig {
+  public static readonly includeRe = /^(#include)\s(.*)$/
   public static readonly settingRe = /^(.*)\s=\s(.*)$/
   public readonly filePath: string
 
@@ -38,14 +39,18 @@ export default class XCConfig {
       )
     }
     const configFileContent = (await readFile(this.filePath)).toString()
-    return configFileContent
-      .split('\n')
-      .filter(l => XCConfig.settingRe.test(l))
-      .map(e => [
-        XCConfig.settingRe.exec(e)![1],
-        XCConfig.settingRe.exec(e)![2],
-      ])
-      .reduce((obj, e) => Object.assign(obj, { [e[0]]: e[1] }), {})
+    return Object.fromEntries(
+      configFileContent.split('\n').flatMap(l => {
+        const matchedEntry =
+          XCConfig.includeRe.exec(l)?.slice(1) ||
+          XCConfig.settingRe.exec(l)?.slice(1)
+
+        if (!matchedEntry) {
+          return [] // use flatMap to filter non-matches
+        }
+        return [matchedEntry]
+      })
+    )
   }
 
   /**
@@ -57,8 +62,11 @@ export default class XCConfig {
    * @returns The buildSettings object that was provided to the method
    */
   public async setBuildSettings(buildSettings: object): Promise<object> {
-    const configFileContent = Object.keys(buildSettings)
-      .map(k => `${k} = ${buildSettings[k]}`)
+    const configFileContent = Object.entries(buildSettings)
+      .map(([key, val]) => {
+        const separator = key === '#include' ? ' ' : ' = '
+        return `${key}${separator}${val}`
+      })
       .join('\n')
     await writeFile(this.filePath, configFileContent)
     return buildSettings
